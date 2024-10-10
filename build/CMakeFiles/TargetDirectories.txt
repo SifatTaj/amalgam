@@ -1,0 +1,3 @@
+/home/staki@unomaha.edu/build/CMakeFiles/rebuild_cache.dir
+/home/staki@unomaha.edu/build/CMakeFiles/edit_cache.dir
+/home/staki@unomaha.edu/build/CMakeFiles/main.dir
