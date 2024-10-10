@@ -9,12 +9,10 @@ After training, Amalgam extracts the original models from the augmented models a
 
 ## Features
 
----
-
 - A simple-to-use API for PyTorch models and datasets
 - Currently works with computer vision models and datasets
 - Supports CUDA (Nvidia) and MPS (Apple Silicon) acceleration
 - Supports fine-tuning an existing PyTorch model
 - Incurs a moderate overhead compared to other privacy-preserving frameworks
 - No accuracy loss
-```
+
