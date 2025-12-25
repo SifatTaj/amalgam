@@ -11,12 +11,14 @@ Author: Sifat Ut Taki
 #include <pthread.h>
 #include <string> 
 
+// For convenience
 using namespace std::chrono;
-
 using namespace std;
 
+// Number of threads for multi-threaded augmentation
 #define NUM_THREADS 20
 
+// Global variables
 torch::Tensor trainset;
 torch::Tensor testset;
 torch::Tensor aug_indices;
@@ -36,8 +38,10 @@ int aug_size;
 int test_setSize;
 int train_setSize;
 
-
+// Thread function for data augmentation
 void *AugData(void *threadId) {
+
+    // Convert threadId to long
     long tid = (long) threadId;
 
     int train_startIdx = tid * train_setSize;
@@ -48,6 +52,7 @@ void *AugData(void *threadId) {
     // Trainset augmentation
     for (int data_i = train_startIdx; data_i < train_endIdx; data_i++) {
 
+        
         torch::Tensor aug_tensors = torch::zeros({num_channel, aug_tensor_size});
         int aug_image_shape[2] = {aug_tensor_dim, aug_tensor_dim};
         torch::Tensor aug_img = torch::zeros({num_channel, aug_tensor_dim, aug_tensor_dim});
@@ -114,6 +119,7 @@ void *AugData(void *threadId) {
 
 int main() {
 
+    // Load a PyTorch dataset into Libtorch
     torch::jit::script::Module container = torch::jit::load("path/to/dataset");
     trainset = container.attr("train_set").toTensor();
     testset = container.attr("test_set").toTensor();
