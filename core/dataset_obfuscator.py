@@ -1,10 +1,14 @@
 import torch
 import torchvision
-import argparse
 from tqdm import tqdm
-import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
+
+'''
+Dataset Obfuscator
+
+This module provides functionality to obfuscate datasets by augmenting samples with noise.
+It supports loading datasets, generating noise, augmenting samples, and saving the augmented datasets.
+'''
 
 class DatasetObfuscator:
     def __init__(self, path: str) -> None:
@@ -118,59 +122,9 @@ class DatasetObfuscator:
             'images': self.aug_samples,
             'labels': self.labels
         }
-        
+
         try:
             torch.save(data_to_save, save_path)
             print(f"Augmented dataset saved successfully to {save_path}.")
         except Exception as e:
             print(f"Failed to save augmented dataset to {save_path}: {e}")
-
-
-def display_image(image_tensor: torch.Tensor):
-    if image_tensor.is_cuda:
-        image_tensor = image_tensor.cpu()
-    
-    image_np = image_tensor.detach().numpy().transpose((1, 2, 0))
-    
-    image_np = np.clip(image_np, 0, 1)
-    
-    fig, ax = plt.subplots(figsize=(6, 6))
-    ax.imshow(image_np)
-    ax.set_title('Image Display')
-    ax.axis('off')
-    plt.tight_layout()
-    plt.show()
-
-
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description='Dataset Obfuscator')
-
-    parser.add_argument('--trainset', type=str, default='../datasets/cifar10_train.pt',
-                        help='Path to train dataset')
-    parser.add_argument('--testset', type=str, default='../datasets/cifar10_test.pt',
-                        help='Path to test/validation dataset')
-
-    # args = parser.parse_args()
-
-    # samples, labels = load_dataset(args.testset)
-
-    # noise_set = generate_noise(samples.shape, 0.25, 'uniform')
-    # noise_size = noise_set.shape[1] * noise_set.shape[2]
-
-    # aug_indices = get_random_aug_indices(samples.shape[1:], noise_set.shape)
-
-    # aug_sample = augment_sample(samples[0], noise_set[0], aug_indices)
-    # print(aug_sample.shape)
-
-    # print(samples[0][0])
-
-    # print(torch.randn(sample_shape))
-    # train_data = load_dataset(args.trainset)
-
-    dataset_obfuscator = DatasetObfuscator('../datasets/cifar10_test.pt')
-    noise = dataset_obfuscator.generate_noise(0.25, 'uniform')
-    dataset_obfuscator.set_random_aug_indices(noise.shape)
-    dataset_obfuscator.augment_dataset(noise)
-    aug_sample = dataset_obfuscator.aug_samples[0]
-    print(aug_sample.shape)
