@@ -83,12 +83,15 @@ class DatasetObfuscator:
 
         return self.noise_set
 
-    def augment_dataset(self, noise_set: torch.Tensor, aug_indices: torch.Tensor) -> torch.Tensor:
+    def augment_dataset(self, noise_set: torch.Tensor) -> torch.Tensor:
+        if self.aug_indices is None:
+            raise ValueError("Augmentation indices are not set. Set indices using set_random_aug_indices() first.")
+
         augmented_dataset = []
 
         print("Augmenting dataset...")
         for i in tqdm(range(self.samples.shape[0])):
-            augmented_dataset.append(self.augment_sample(self.samples[i], noise_set[i], aug_indices))
+            augmented_dataset.append(self.augment_sample(self.samples[i], noise_set[i], self.aug_indices))
         self.aug_samples = torch.stack(augmented_dataset, dim=0)
 
     def augment_sample(self, sample_tensor: torch.Tensor, noise_tensor: torch.Tensor, aug_indices: list[int]) -> torch.Tensor:
