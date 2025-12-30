@@ -39,7 +39,10 @@ class DatasetObfuscator:
         except Exception as e:
             print(f"Failed to load dataset from {self.path}: {e}")
 
-    def set_random_aug_indices(self, noise_shape: torch.Size) -> None:
+    def set_random_aug_indices(self, aug_indices: torch.Tensor) -> None:
+        self.aug_indices = aug_indices
+
+    def generate_random_indices(self, noise_shape: torch.Size) -> None:
         
         noise_size = noise_shape[1] * noise_shape[2]
 
@@ -48,7 +51,7 @@ class DatasetObfuscator:
         for c in range(self.sample_shape[0]):
             aug_indices.append(np.random.choice(np.arange(0, aug_flat_size), replace=False, size=noise_size))
 
-        self.aug_indices = torch.tensor(np.array(aug_indices))
+        return torch.tensor(np.array(aug_indices))
 
     def get_random_aug_indices(self) -> torch.Tensor:
         if self.aug_indices is None:
@@ -80,12 +83,12 @@ class DatasetObfuscator:
 
         return self.noise_set
 
-    def augment_dataset(self, noise_set: torch.Tensor) -> torch.Tensor:
+    def augment_dataset(self, noise_set: torch.Tensor, aug_indices: torch.Tensor) -> torch.Tensor:
         augmented_dataset = []
 
         print("Augmenting dataset...")
         for i in tqdm(range(self.samples.shape[0])):
-            augmented_dataset.append(self.augment_sample(self.samples[i], noise_set[i], self.aug_indices))
+            augmented_dataset.append(self.augment_sample(self.samples[i], noise_set[i], aug_indices))
         self.aug_samples = torch.stack(augmented_dataset, dim=0)
 
     def augment_sample(self, sample_tensor: torch.Tensor, noise_tensor: torch.Tensor, aug_indices: list[int]) -> torch.Tensor:
