@@ -126,7 +126,8 @@ class DatasetObfuscator:
 
         data_to_save = {
             'images': self.aug_samples,
-            'labels': self.labels
+            'labels': self.labels,
+            'aug_indices': self.aug_indices
         }
 
         try:
