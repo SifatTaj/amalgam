@@ -21,6 +21,7 @@ using namespace std;
 // Global variables
 torch::Tensor trainset;
 torch::Tensor testset;
+torch::noise_tensor;
 torch::Tensor aug_indices;
 
 torch::Tensor aug_trainset;
@@ -51,7 +52,6 @@ void *AugData(void *threadId) {
 
     // Trainset augmentation
     for (int data_i = train_startIdx; data_i < train_endIdx; data_i++) {
-
         
         torch::Tensor aug_tensors = torch::zeros({num_channel, aug_tensor_size});
         int aug_image_shape[2] = {aug_tensor_dim, aug_tensor_dim};
@@ -63,12 +63,14 @@ void *AugData(void *threadId) {
             torch::Tensor img_flat = torch::flatten(img[c]);
             int aug_index = 0;
             int j = 0;
+            int noise_index = 0;
 
             int aug_index_val = aug_indices[c][aug_index].item<int>();
 
             for (int i = 0; i < aug_tensor_size; i++) {
                 if (i == aug_index_val) {
-                    aug_tensors[c][i] = 0;      // replace with a preferred randomizer
+                    aug_tensors[c][i] = noise_tensor[c][noise_index];
+                    noise_index++;
                     aug_index++;
                     aug_index_val = aug_indices[c][aug_index].item<int>();
                 } else {
@@ -97,12 +99,14 @@ void *AugData(void *threadId) {
             torch::Tensor img_flat = torch::flatten(img[c]);
             int aug_index = 0;
             int j = 0;
+            int noise_index = 0;
 
             int aug_index_val = aug_indices[c][aug_index].item<int>();
 
             for (int i = 0; i < aug_tensor_size; i++) {
                 if (i == aug_index_val) {
-                    aug_tensors[c][i] = 0;      // replace with a preferred noise value
+                    aug_tensors[c][i] = noise_tensor[c][noise_index];
+                    noise_index++;
                     aug_index++;
                     aug_index_val = aug_indices[c][aug_index].item<int>();
                 } else {
@@ -123,6 +127,7 @@ int main() {
     torch::jit::script::Module container = torch::jit::load("path/to/dataset");
     trainset = container.attr("train_set").toTensor();
     testset = container.attr("test_set").toTensor();
+    noise_tensor = container.attr("noise_tensor").toTensor();
     torch::Tensor aug_indices_all = container.attr("aug_indices").toTensor();
 
     int train_samples = trainset.sizes()[0];
