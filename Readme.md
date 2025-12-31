@@ -1,6 +1,6 @@
 # Amalgam: A Framework for Obfuscated Neural Network Training on the Cloud
 
-![diagram](assets/amalgam.png)
+![diagram](assets/amalgam.png){: .centered}
 
 Amalgam is an easy-to-use neural network obfuscation framework. Users simply need to upload a PyTorch model and a dataset. 
 Currently, Amalgam supports vision language models written using the PyTorch framework.
