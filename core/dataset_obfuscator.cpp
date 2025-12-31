@@ -102,7 +102,7 @@ void *AugData(void *threadId) {
 
             for (int i = 0; i < aug_tensor_size; i++) {
                 if (i == aug_index_val) {
-                    aug_tensors[c][i] = 0;      // replace with a preferred randomizer
+                    aug_tensors[c][i] = 0;      // replace with a preferred noise value
                     aug_index++;
                     aug_index_val = aug_indices[c][aug_index].item<int>();
                 } else {
