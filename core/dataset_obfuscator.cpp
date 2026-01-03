@@ -59,6 +59,7 @@ void *AugData(void *threadId) {
 
         torch::Tensor img = trainset[data_i];
 
+        // iterate over each channel
         for (int c = 0; c < num_channel; c++) {
             torch::Tensor img_flat = torch::flatten(img[c]);
             int aug_index = 0;
@@ -67,6 +68,7 @@ void *AugData(void *threadId) {
 
             int aug_index_val = aug_indices[c][aug_index].item<int>();
 
+            // Insert noise at specified indices
             for (int i = 0; i < aug_tensor_size; i++) {
                 if (i == aug_index_val) {
                     aug_tensors[c][i] = noise_tensor[c][noise_index];
@@ -130,27 +132,34 @@ int main() {
     noise_tensor = container.attr("noise_tensor").toTensor();
     torch::Tensor aug_indices_all = container.attr("aug_indices").toTensor();
 
+    // Get dataset sizes
     int train_samples = trainset.sizes()[0];
     int test_samples = testset.sizes()[0];
 
+    // Get image dimensions
     num_channel = testset.sizes()[1];
     img_dim = testset.sizes()[2];
 
+    // Calculate set sizes for each thread
     test_setSize = (int) test_samples / 20;
     train_setSize = (int) train_samples / 20;
 
+    // Augmentation levels
     float aug_levels[4] = {0.25, 0.5, 0.75, 1.0};
 
+    // Perform augmentation for each level
     for(int level = 0; level < 4; level++) {
 
         float aug_level = aug_levels[level];
 
+        // Calculate augmentation parameters
         aug_dim = (int) img_dim * aug_level;
         aug_tensor_dim = img_dim + aug_dim;
         aug_tensor_size = aug_tensor_dim * aug_tensor_dim;
         aug_size = aug_tensor_size - (img_dim * img_dim);
         aug_indices = aug_indices_all[level];
 
+        // Initialize augmented datasets
         aug_trainset = torch::zeros({train_samples, num_channel, aug_tensor_dim, aug_tensor_dim});
         aug_testset = torch::zeros({test_samples, num_channel, aug_tensor_dim, aug_tensor_dim});
 
@@ -165,6 +174,7 @@ int main() {
         pthread_attr_init(&attr);
         pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
+        // Start timing for benchmarking
         auto start_time = high_resolution_clock::now();
 
         for(i = 0; i < NUM_THREADS; i++) {
