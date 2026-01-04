@@ -9,6 +9,11 @@ from torch.nn.modules.conv import _ConvNd
 
 import numpy as np
 
+'''
+`AnonConv2d`: A custom convolutional layer that can handle obfuscated inputs by deobfuscating them
+using provided augmentation indices and a specified deobfuscation dimension.
+
+'''
 
 def _ntuple(n, name="parse"):
     def parse(x):
@@ -38,8 +43,8 @@ class AnonConv2d(_ConvNd):
             groups: int = 1,
             bias: bool = True,
             padding_mode: str = 'zeros',  # TODO: refine this type
-            aug_indices=None,
-            deanon_dim=None,
+            aug_indices: torch.Tensor = None,
+            deanon_dim: torch.Size =None,
             device=None,
             dtype=None,
     ) -> None:
@@ -64,22 +69,22 @@ class AnonConv2d(_ConvNd):
 
     def forward(self, input: Tensor) -> Tensor:
 
-        if input.shape == (input.shape[0], input.shape[1], self.deanon_dim, self.deanon_dim):
+        if input.shape == (input.shape[0], input.shape[1], self.deanon_dim[0], self.deanon_dim[1]):
             return self._conv_forward(input, self.weight, self.bias)
 
-        deanon_batch = torch.zeros(input.shape[0], input.shape[1], self.deanon_dim, self.deanon_dim)
+        device = input.device
+        deanon_batch = torch.zeros(input.shape[0], input.shape[1], self.deanon_dim[0], self.deanon_dim[1], device=device)
 
         for idx, data in enumerate(input):
-            deanon_img = torch.zeros(data.shape[0], self.deanon_dim, self.deanon_dim)
             aug_img_np = data.cpu().numpy()
-            aug_img_np = aug_img_np.reshape(aug_img_np.shape[0], aug_img_np.shape[1] * aug_img_np.shape[1])
+            aug_img_np = aug_img_np.reshape(aug_img_np.shape[0], -1)
 
+            deanon_img_list = []
             for c in range(data.shape[0]):
                 deanon_img_np = np.delete(aug_img_np[c], self.aug_indices[c])
-                deanon_img_np = deanon_img_np.reshape(self.deanon_dim, self.deanon_dim)
-                deanon_img[c] = torch.from_numpy(deanon_img_np)
+                deanon_img_np = deanon_img_np.reshape(self.deanon_dim[0], self.deanon_dim[1])
+                deanon_img_list.append(torch.from_numpy(deanon_img_np))
 
-            deanon_batch[idx] = deanon_img
-        deanon_batch = deanon_batch.to('cuda')
+            deanon_batch[idx] = torch.stack(deanon_img_list).to(device)
 
         return self._conv_forward(deanon_batch, self.weight, self.bias)
