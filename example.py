@@ -1,6 +1,8 @@
 from core.dataset_obfuscator import DatasetObfuscator
+from core.model_obfuscator import ModelObfuscator
+from models.resnet import ResNet18
 
-def main():
+def dataset_obfuscation():
     # initialize dataset obfuscator for train dataset
     testset_obfuscator = DatasetObfuscator('datasets/cifar10_train.pt', amount=0.25)
 
@@ -34,5 +36,28 @@ def main():
     # save the obfuscated test dataset
     trainset_obfuscator.save_augmented_dataset('datasets/cifar10_test_obfuscated.pt')
 
+def model_obfuscation():
+    # Load obfuscated dataset
+    obfs_data = torch.load("datasets/cifar10_test_obfuscated.pt")
+    obfs_samples = obfs_data['images']
+    labels = obfs_data['labels']
+    aug_indices = obfs_data['aug_indices']
+
+    # Initialize original model
+    model = ResNet18(num_classes=10, num_channel=3)
+
+    # Initialize model obfuscator
+    model_obfuscator = ModelObfuscator(model)
+    model_obfuscator.replace_first_conv_layer(aug_indices=aug_indices, deanon_dim=(32, 32))
+
+    # Get obfuscated model
+    obfs_model = model_obfuscator.get_obfuscated_model()
+
+    # The obfuscated model can now be trained on obfs_samples and labels
+
+    # After training, deobfuscate the model
+    deobfuscate_mode = model_obfuscator.deobfuscate_model()
+
 if __name__ == "__main__":
-    main()
+    dataset_obfuscation()
+    model_obfuscation()
