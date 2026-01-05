@@ -21,7 +21,7 @@ After training, Amalgam extracts the original models from the augmented models a
 - Incurs a moderate overhead compared to other privacy-preserving frameworks
 - No accuracy loss
 
-## Usage
+## Get Start
 
 Install the required libraries from `requrements.txt`
 
@@ -129,4 +129,23 @@ To build and run the CUDA backend you need a working CUDA development environmen
 **Use the Makefile to compile the CUDA files:**
 ```bash
 make
+```
+
+## Cite
+```bibtex
+@inproceedings{10.1145/3652892.3700762,
+author = {Taki, Sifat Ut and Mastorakis, Spyridon},
+title = {Amalgam: A Framework for Obfuscated Neural Network Training on the Cloud},
+year = {2024},
+isbn = {9798400706233},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3652892.3700762},
+doi = {10.1145/3652892.3700762},
+booktitle = {Proceedings of the 25th International Middleware Conference},
+pages = {238–251},
+numpages = {14},
+location = {Hong Kong, Hong Kong},
+series = {Middleware '24}
+}
 ```
