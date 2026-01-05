@@ -132,20 +132,21 @@ make
 ```
 
 ## Cite
+Please cite the work using the following bibtex
 ```bibtex
 @inproceedings{10.1145/3652892.3700762,
-author = {Taki, Sifat Ut and Mastorakis, Spyridon},
-title = {Amalgam: A Framework for Obfuscated Neural Network Training on the Cloud},
-year = {2024},
-isbn = {9798400706233},
-publisher = {Association for Computing Machinery},
-address = {New York, NY, USA},
-url = {https://doi.org/10.1145/3652892.3700762},
-doi = {10.1145/3652892.3700762},
-booktitle = {Proceedings of the 25th International Middleware Conference},
-pages = {238–251},
-numpages = {14},
-location = {Hong Kong, Hong Kong},
-series = {Middleware '24}
+   author = {Taki, Sifat Ut and Mastorakis, Spyridon},
+   title = {Amalgam: A Framework for Obfuscated Neural Network Training on the Cloud},
+   year = {2024},
+   isbn = {9798400706233},
+   publisher = {Association for Computing Machinery},
+   address = {New York, NY, USA},
+   url = {https://doi.org/10.1145/3652892.3700762},
+   doi = {10.1145/3652892.3700762},
+   booktitle = {Proceedings of the 25th International Middleware Conference},
+   pages = {238–251},
+   numpages = {14},
+   location = {Hong Kong, Hong Kong},
+   series = {Middleware '24}
 }
 ```
