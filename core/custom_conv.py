@@ -8,6 +8,8 @@ import torch.nn.functional as F
 from torch.nn.modules.conv import _ConvNd
 
 import numpy as np
+import ctypes
+import os.path
 
 '''
 `AnonConv2d`: A custom convolutional layer that can handle obfuscated inputs by deobfuscating them
@@ -70,21 +72,65 @@ class AnonConv2d(_ConvNd):
     def forward(self, input: Tensor) -> Tensor:
 
         if input.shape == (input.shape[0], input.shape[1], self.deanon_dim[0], self.deanon_dim[1]):
-            return self._conv_forward(input, self.weight, self.bias)
+                return self._conv_forward(input, self.weight, self.bias)
 
-        device = input.device
-        deanon_batch = torch.zeros(input.shape[0], input.shape[1], self.deanon_dim[0], self.deanon_dim[1], device=device)
+        lib_path = "core/lib/filter_input.so"
 
-        for idx, data in enumerate(input):
-            aug_img_np = data.cpu().numpy()
-            aug_img_np = aug_img_np.reshape(aug_img_np.shape[0], -1)
+        if os.path.isfile(lib_path):
 
-            deanon_img_list = []
-            for c in range(data.shape[0]):
-                deanon_img_np = np.delete(aug_img_np[c], self.aug_indices[c])
-                deanon_img_np = deanon_img_np.reshape(self.deanon_dim[0], self.deanon_dim[1])
-                deanon_img_list.append(torch.from_numpy(deanon_img_np))
+            lib = ctypes.CDLL(lib_path)
+            device = input.device
 
-            deanon_batch[idx] = torch.stack(deanon_img_list).to(device)
+            batch_size = input.shape[0]
+            n_channels = input.shape[1]
+            aug_input_size = input.shape[2] * input.shape[3]
+            deanon_input_size = self.deanon_dim[1] * self.deanon_dim[0]
+            aug_indices_size = len(self.aug_indices[0])
 
-        return self._conv_forward(deanon_batch, self.weight, self.bias)
+            aug_input = input.flatten().to(device)
+            deanon_batch = torch.zeros(batch_size * n_channels * deanon_input_size, dtype=torch.float32).to(device)
+            aug_indices_gpu = self.aug_indices.flatten().type(torch.int32).to(device)
+
+            lib.filter_aug_input.argtypes = [
+                ctypes.c_void_p,
+                ctypes.c_void_p,
+                ctypes.c_void_p,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_int
+            ]
+
+            lib.filter_aug_input(
+                ctypes.c_void_p(aug_input.data_ptr()),
+                ctypes.c_void_p(deanon_batch.data_ptr()),
+                ctypes.c_void_p(aug_indices_gpu.data_ptr()),
+                ctypes.c_int(aug_indices_size),
+                ctypes.c_int(batch_size),
+                ctypes.c_int(aug_input_size),
+                ctypes.c_int(deanon_input_size),
+                ctypes.c_int(n_channels)
+            )
+
+            deanon_batch = deanon_batch.reshape(batch_size, n_channels, self.deanon_dim[1], self.deanon_dim[0])
+            return self._conv_forward(deanon_batch, self.weight, self.bias)
+
+        else:
+
+            device = input.device
+            deanon_batch = torch.zeros(input.shape[0], input.shape[1], self.deanon_dim[0], self.deanon_dim[1], device=device)
+
+            for idx, data in enumerate(input):
+                aug_img_np = data.cpu().numpy()
+                aug_img_np = aug_img_np.reshape(aug_img_np.shape[0], -1)
+
+                deanon_img_list = []
+                for c in range(data.shape[0]):
+                    deanon_img_np = np.delete(aug_img_np[c], self.aug_indices[c])
+                    deanon_img_np = deanon_img_np.reshape(self.deanon_dim[0], self.deanon_dim[1])
+                    deanon_img_list.append(torch.from_numpy(deanon_img_np))
+
+                deanon_batch[idx] = torch.stack(deanon_img_list).to(device)
+
+            return self._conv_forward(deanon_batch, self.weight, self.bias)

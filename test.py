@@ -15,10 +15,16 @@ def test_cuda():
     aug_input_size = obfs_samples.shape[2] * obfs_samples.shape[3]
     n_channels = obfs_samples.shape[1]
 
-    sample_batch = obfs_samples[:batch_size].flatten().contiguous().numpy()
-    filtered_input = np.zeros(batch_size * n_channels * filtered_input_size, dtype=np.float32)
-    aug_indices = aug_indices.flatten().contiguous().numpy()
+    device = 'cuda:0'
 
+    # Keep tensors on GPU
+    sample_batch = obfs_samples[:batch_size].flatten().to(device)
+    filtered_input = torch.zeros(batch_size * n_channels * filtered_input_size, dtype=torch.float32).to(device)
+    # aug_indices is (n_channels, aug_indices_size), flatten to pass to kernel
+    aug_indices_gpu = aug_indices.flatten().type(torch.int32).to(device)
+
+    print(aug_indices_gpu.shape)
+    print(aug_indices_gpu.dtype)
     lib_path = "core/lib/filter_input.so"
 
     # Load the CUDA library
@@ -26,22 +32,22 @@ def test_cuda():
 
     '''
     void filter_aug_input(
-        const float* aug_input,
+        float* aug_input,
         float* filtered_input,
-        const int* aug_indices,
-        const int aug_indices_size,
-        const int batch_size,
-        const int aug_input_size,
-        const int filtered_input_size,
-        const int n_channels,
+        int* aug_indices,
+        int aug_indices_size,
+        int batch_size,
+        int aug_input_size,
+        int filtered_input_size,
+        int n_channels
     ) {
     '''
 
-    # Define the function signature
+    # Define the function signature using c_void_p for device pointers
     lib.filter_aug_input.argtypes = [
-        ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-        ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-        ndpointer(ctypes.c_int, flags="C_CONTIGUOUS"),
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
         ctypes.c_int,
         ctypes.c_int,
         ctypes.c_int,
@@ -50,9 +56,9 @@ def test_cuda():
     ]
 
     lib.filter_aug_input(
-        sample_batch.astype(np.float32),
-        filtered_input,
-        aug_indices.astype(np.int32),
+        ctypes.c_void_p(sample_batch.data_ptr()),
+        ctypes.c_void_p(filtered_input.data_ptr()),
+        ctypes.c_void_p(aug_indices_gpu.data_ptr()),
         ctypes.c_int(aug_indices_size),
         ctypes.c_int(batch_size),
         ctypes.c_int(aug_input_size),
@@ -60,8 +66,27 @@ def test_cuda():
         ctypes.c_int(n_channels)
     )
 
-    print(len(sample_batch))
-    print(len(filtered_input))
+    # for i in range(aug_indices_size * 0, aug_indices_size * 1):
+    #     print('after:', aug_indices_gpu[i])
+
+    # idx = 11
+    # channel_idx = idx % n_channels
+    # aug_indices_offset = channel_idx * aug_indices_size
+
+    # for j in range(aug_indices_size):
+    #     aug_index = aug_indices_gpu[aug_indices_offset + j]
+    #     print(f'aug_indices[{aug_indices_offset + j}] = {aug_index}')
+
+    original_data = torch.load("datasets/cifar10_test.pt")
+    original_samples = original_data['images']
+
+    orig_sample_batch = original_samples[:batch_size].flatten().cuda()
+    print(filtered_input)
+    print(orig_sample_batch)
+    match = filtered_input == orig_sample_batch
+    print(torch.sum(~match))
+
+
 
 def test_dataset():
     obfs_data = torch.load("datasets/cifar10_test_obfuscated.pt")
@@ -112,8 +137,8 @@ def test_model():
     model_obfuscator = ModelObfuscator(model)
     model_obfuscator.replace_first_conv_layer(aug_indices=aug_indices, deanon_dim=(32, 32))
     obfs_model = model_obfuscator.get_obfuscated_model()
-    obfs_model = obfs_model.to('cuda')
-    obfs_samples = obfs_samples.to('cuda')
+    obfs_model = obfs_model.to('cuda:0')
+    obfs_samples = obfs_samples.to('cuda:0')
 
     out = obfs_model(obfs_samples[:4])
     print("Output shape:", out.shape)
@@ -122,5 +147,5 @@ def test_model():
 
 if __name__ == "__main__":
     # test_dataset()
-    # test_model()
-    test_cuda()
+    test_model()
+    # test_cuda()
