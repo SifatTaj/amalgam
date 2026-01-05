@@ -71,26 +71,32 @@ class AnonConv2d(_ConvNd):
 
     def forward(self, input: Tensor) -> Tensor:
 
+        # Check if input is augmented
         if input.shape == (input.shape[0], input.shape[1], self.deanon_dim[0], self.deanon_dim[1]):
                 return self._conv_forward(input, self.weight, self.bias)
 
         lib_path = "core/lib/filter_input.so"
+        device = input.device
 
+        # Use the CUDA kernel if available
         if os.path.isfile(lib_path):
 
+            # Load the CUDA library
             lib = ctypes.CDLL(lib_path)
-            device = input.device
 
+            # Define parameters
             batch_size = input.shape[0]
             n_channels = input.shape[1]
             aug_input_size = input.shape[2] * input.shape[3]
             deanon_input_size = self.deanon_dim[1] * self.deanon_dim[0]
             aug_indices_size = len(self.aug_indices[0])
 
+            # Flatten data and move to the corresponding device
             aug_input = input.flatten().to(device)
             deanon_batch = torch.zeros(batch_size * n_channels * deanon_input_size, dtype=torch.float32).to(device)
             aug_indices_gpu = self.aug_indices.flatten().type(torch.int32).to(device)
 
+            # Set argument types
             lib.filter_aug_input.argtypes = [
                 ctypes.c_void_p,
                 ctypes.c_void_p,
@@ -102,6 +108,7 @@ class AnonConv2d(_ConvNd):
                 ctypes.c_int
             ]
 
+            # Pass device pointer to the CUDA function
             lib.filter_aug_input(
                 ctypes.c_void_p(aug_input.data_ptr()),
                 ctypes.c_void_p(deanon_batch.data_ptr()),
@@ -113,24 +120,28 @@ class AnonConv2d(_ConvNd):
                 ctypes.c_int(n_channels)
             )
 
+            # Reshape filtered data
             deanon_batch = deanon_batch.reshape(batch_size, n_channels, self.deanon_dim[1], self.deanon_dim[0])
             return self._conv_forward(deanon_batch, self.weight, self.bias)
 
         else:
-
-            device = input.device
+            # Define deanon batch
             deanon_batch = torch.zeros(input.shape[0], input.shape[1], self.deanon_dim[0], self.deanon_dim[1], device=device)
 
+            # Iterate through augmented sample
             for idx, data in enumerate(input):
                 aug_img_np = data.cpu().numpy()
                 aug_img_np = aug_img_np.reshape(aug_img_np.shape[0], -1)
 
                 deanon_img_list = []
+
+                # Delete all the augmented indices from the corresponding channel
                 for c in range(data.shape[0]):
                     deanon_img_np = np.delete(aug_img_np[c], self.aug_indices[c])
                     deanon_img_np = deanon_img_np.reshape(self.deanon_dim[0], self.deanon_dim[1])
                     deanon_img_list.append(torch.from_numpy(deanon_img_np))
 
+                # Reshape filtered data
                 deanon_batch[idx] = torch.stack(deanon_img_list).to(device)
 
             return self._conv_forward(deanon_batch, self.weight, self.bias)
