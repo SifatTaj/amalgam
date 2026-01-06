@@ -12,6 +12,8 @@ Amalgam augments PyTorch models and datasets to be used for training with well-c
 model architectures and training datasets from the cloud.
 After training, Amalgam extracts the original models from the augmented models and returns them to users.
 
+Paper: [https://dl.acm.org/doi/abs/10.1145/3652892.3700762](https://dl.acm.org/doi/abs/10.1145/3652892.3700762)
+
 ## Features
 
 - A simple-to-use API for PyTorch models and datasets
