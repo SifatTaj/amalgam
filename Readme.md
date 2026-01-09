@@ -92,7 +92,7 @@ from models.resnet import ResNet18
 model = ResNet18(num_classes=10, num_channel=3)
 ```
 
-Initialize a model obfuscator and pass the origina model.
+Initialize a model obfuscator and pass the original model.
 
 ```python
 model_obfuscator = ModelObfuscator(model)
