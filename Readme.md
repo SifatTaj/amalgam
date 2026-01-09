@@ -18,12 +18,17 @@ Paper: [https://dl.acm.org/doi/abs/10.1145/3652892.3700762](https://dl.acm.org/d
 
 - A simple-to-use API for PyTorch models and datasets
 - Currently works with computer vision models and datasets
-- Supports CUDA (Nvidia) and MPS (Apple Silicon) acceleration
+- Supports CUDA (Nvidia) acceleration
 - Supports fine-tuning an existing PyTorch model
 - Incurs a moderate overhead compared to other privacy-preserving frameworks
 - No accuracy loss
 
 ## Get Start
+
+Clone the repo
+```bash
+git clone https://github.com/SifatTaj/amalgam.git
+```
 
 Install the required libraries from `requrements.txt`
 
