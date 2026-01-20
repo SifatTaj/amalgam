@@ -41,6 +41,7 @@ __global__ void filter_aug_input_kernel(
 
             // Iterate through the augmented indices to check if index i is augmented or not
             // TODO: Can be further optimized with binary search
+            // TODO: Try using sets for contast lookups
             for (int j = 0; j < aug_indices_size; ++j) {
                 int aug_index = aug_indices[aug_indices_offset + j];
 
